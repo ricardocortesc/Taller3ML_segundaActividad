@@ -1,0 +1,2 @@
+baseline_accuracy,pca_accuracy,accuracy_diff,variance_explained,n_components,n_features_original
+0.678125,0.515625,-0.16249999999999998,0.4607183330872213,2,11
