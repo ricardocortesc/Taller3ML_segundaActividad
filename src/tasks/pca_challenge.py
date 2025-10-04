@@ -261,7 +261,7 @@ def compare_original_vs_pca(
     print(classification_report(y_test, y_pred_baseline))
     
     # ===== PCA: Solo n_components =====
-    logger.info(f"🔹 Entrenando modelo PCA ({n_components} componentes)...")
+    logger.info(f"Entrenando modelo PCA ({n_components} componentes)...")
     scaler_pca = StandardScaler()
     X_train_scaled_pca = scaler_pca.fit_transform(X_train)
     X_test_scaled_pca = scaler_pca.transform(X_test)

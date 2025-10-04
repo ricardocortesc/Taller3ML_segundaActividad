@@ -1,12 +1,12 @@
 """
 pipeline_pca.py — Orquestación con Prefect que cumple los 5 puntos del taller.
+VERSIÓN COMPLETA: Incluye análisis PCA para dataset de vino.
 """
 from __future__ import annotations
 from prefect import flow
 from pathlib import Path
 
 from src.config.settings import PROJECT_ROOT, ASSETS_DIR, N_COMPONENTS, STANDARDIZE, SEED
-from src.flow.utils import ensure_dirs
 from src.tasks.pca_challenge import (
     load_iris_example,
     load_tabular,
@@ -43,7 +43,10 @@ def run_pipeline(
     print("WORKSHOP PCA - PIPELINE COMPLETO")
     print("="*70 + "\n")
     
-    ensure_dirs(PROJECT_ROOT, ["data", "assets"])
+    # Crear directorios necesarios
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    (ASSETS_DIR / "iris").mkdir(parents=True, exist_ok=True)
+    (ASSETS_DIR / "wine").mkdir(parents=True, exist_ok=True)
     
     # ===================================================================
     # PUNTO 1: EJEMPLO IRIS - Data Science Workflow
@@ -85,6 +88,37 @@ def run_pipeline(
     
     # 2.1 Cargar dataset
     df_wine = load_tabular(WINE_URL, sep=";")
+    
+    # 2.2 Preparar features (sin target aún) para análisis PCA
+    X_wine_all = df_wine.drop(columns=['quality']).copy()
+    y_wine_quality = df_wine['quality'].copy()
+    
+    # 2.3 Aplicar PCA al dataset completo de vino (análisis exploratorio)
+    print("\nAnálisis PCA del Dataset de Vino:")
+    pca_out_wine = run_pca(
+        X_wine_all,
+        n_components=n_components,
+        standardize=standardize,
+        seed=seed
+    )
+    
+    # 2.4 Visualizar varianza explicada
+    plot_variance(
+        pca_out_wine["explained_ratio"],
+        pca_out_wine["explained_cum"]
+    )
+    
+    # 2.5 Guardar componentes del vino
+    save_components(
+        pca_out_wine["pcs_df"],
+        pca_out_wine["explained_ratio"],
+        ASSETS_DIR / "wine"
+    )
+    
+    print(f"\nResumen PCA Wine:")
+    print(f"PC1: {pca_out_wine['explained_ratio'][0]:.2%} varianza")
+    print(f"PC2: {pca_out_wine['explained_ratio'][1]:.2%} varianza")
+    print(f"Total (2 PCs): {pca_out_wine['explained_cum'][1]:.2%} varianza")
     
     # ===================================================================
     # PUNTO 3 & 4: CLASIFICACIÓN MULTICLASE + COMPARACIÓN
@@ -140,32 +174,40 @@ def run_pipeline(
     # RESUMEN FINAL
     # ===================================================================
     print("\n" + "="*70)
-    print("RESUMEN DE RESULTADOS")
+    print("Resultados Finales")
     print("="*70)
+    
+    print("\nIRIS:")
+    print(f"Varianza explicada (2 PCs): {pca_out_iris['explained_cum'][1]:.2%}")
+    
+    print("\nWINE:")
+    print(f"Varianza explicada (2 PCs): {pca_out_wine['explained_cum'][1]:.2%}")
     
     print("\nCLASIFICACIÓN MULTICLASE:")
     print(f"Baseline (todas las features): {results_mc['baseline_accuracy']:.4f}")
     print(f"PCA ({n_components} componentes):       {results_mc['pca_accuracy']:.4f}")
     print(f"Diferencia:                     {results_mc['accuracy_diff']:+.4f}")
     print(f"Varianza explicada:             {results_mc['variance_explained']:.2%}")
-
+    
     print("\nCLASIFICACIÓN BINARIA:")
     print(f"Baseline (todas las features): {results_bin['baseline_accuracy']:.4f}")
     print(f"PCA ({n_components} componentes):       {results_bin['pca_accuracy']:.4f}")
     print(f"Diferencia:                     {results_bin['accuracy_diff']:+.4f}")
     print(f"Varianza explicada:             {results_bin['variance_explained']:.2%}")
-
+    
     print("\nMULTICLASE vs BINARIA:")
     mejor = "BINARIA" if results_bin['baseline_accuracy'] > results_mc['baseline_accuracy'] else "MULTICLASE"
     print(f"Mejor clasificación: {mejor}")
     
     print("\n" + "="*70)
-    print("Fin del Taller")
+    print("Fin")
     print("="*70)
-    print(f"\nArchivos en: {ASSETS_DIR}")
+    print(f"\nArtefactos en: {ASSETS_DIR}")
     print("\nArchivos generados:")
     print("iris/components.csv")
     print("iris/explained_ratio.csv")
+    print("wine/components.csv")
+    print("wine/explained_ratio.csv")
     print("wine_multiclass_results.csv")
     print("wine_binary_results.csv")
     print("\n" + "="*70 + "\n")
