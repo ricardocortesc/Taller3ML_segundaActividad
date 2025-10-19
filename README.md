@@ -1,5 +1,5 @@
 # Taller3ML_PCA
-- Sebastián Castellano Estupiñan
+- Sebastián Castellanos Estupiñan
 - Ricardo Andrés Cortés Coronell
 - Andrés Felipe Sanchez Rincón
 
